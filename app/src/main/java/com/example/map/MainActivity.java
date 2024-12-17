@@ -1,6 +1,7 @@
 package com.example.map;
 
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -9,6 +10,8 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -19,11 +22,29 @@ import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
 import com.amap.api.location.AMapLocationListener;
+import com.amap.api.maps.AMap;
+import com.amap.api.maps.LocationSource;
+
+import com.amap.api.maps.model.MyLocationStyle;
+
 import com.example.map.databinding.ActivityMainBinding;
+import com.example.map.utils.MapBoundaryHelper;
 
-public class MainActivity extends AppCompatActivity implements AMapLocationListener {
+import java.util.List;
 
+public class MainActivity extends AppCompatActivity implements AMapLocationListener, LocationSource {
+
+    private static final int REQUEST_PERMISSION_CODE = 100;
     private ActivityMainBinding binding;
+
+    // 声明地图控制器
+    private AMap aMap = null;
+
+    private MapBoundaryHelper boundaryHelper;
+    // 声明地图定位监听
+    private LocationSource.OnLocationChangedListener mListener = null;
+
+
 
     private static final String TAG = "MainActivity";
     // 请求权限意图
@@ -53,6 +74,7 @@ public class MainActivity extends AppCompatActivity implements AMapLocationListe
         });
         initLocation();
         binding.mapView.onCreate(savedInstanceState);
+        initMap();
     }
     @Override
     protected void onResume() {
@@ -75,6 +97,40 @@ public class MainActivity extends AppCompatActivity implements AMapLocationListe
     private void showMsg(CharSequence llw) {
         Toast.makeText(this, llw, Toast.LENGTH_SHORT).show();
     }
+
+    /**
+     * 初始化地图
+     */
+    private void initMap() {
+        if (aMap == null) {
+            aMap = binding.mapView.getMap();
+            // 创建定位蓝点的样式
+            MyLocationStyle myLocationStyle = new MyLocationStyle();
+            // 自定义定位蓝点图标
+//            myLocationStyle.myLocationIcon(BitmapDescriptorFactory.fromResource(R.drawable.gps_point));
+            // 自定义精度范围的圆形边框颜色  都为0则透明
+            myLocationStyle.strokeColor(Color.argb(0, 0, 0, 0));
+            // 自定义精度范围的圆形边框宽度  0 无宽度
+            myLocationStyle.strokeWidth(0);
+            // 设置圆形的填充颜色  都为0则透明
+            myLocationStyle.radiusFillColor(Color.argb(0, 0, 0, 0));
+            // 设置定位蓝点的样式
+            aMap.setMyLocationStyle(myLocationStyle);
+
+            // 设置定位监听
+            aMap.setLocationSource(this);
+            // 设置为true表示启动显示定位蓝点，false表示隐藏定位蓝点并不进行定位，默认是false。
+            aMap.setMyLocationEnabled(true);
+            boundaryHelper = new MapBoundaryHelper(aMap);
+                // 查询并绘制行政区边界
+            boundaryHelper.drawBoundary(this, "江苏");
+
+
+//            aMap.setMinZoomLevel(12);
+        }
+    }
+
+
 
     /**
      * 初始化定位
@@ -171,6 +227,9 @@ public class MainActivity extends AppCompatActivity implements AMapLocationListe
 //            binding.tvAddress.setText(result);
             // 停止定位
             stopLocation();
+            if (mListener != null) {
+                mListener.onLocationChanged(aMapLocation);
+            }
         } else {
             // 定位失败
             showMsg("定位失败，错误：" + aMapLocation.getErrorInfo());
@@ -180,5 +239,25 @@ public class MainActivity extends AppCompatActivity implements AMapLocationListe
         }
     }
 
+    @Override
+    public void activate(OnLocationChangedListener onLocationChangedListener) {
+        if (mListener == null) {
+            mListener = onLocationChangedListener;
+        }
+        startLocation();
+    }
+
+    /**
+     * 禁用
+     */
+    @Override
+    public void deactivate() {
+        mListener = null;
+        if (mLocationClient != null) {
+            mLocationClient.stopLocation();
+            mLocationClient.onDestroy();
+        }
+        mLocationClient = null;
+    }
 }
 

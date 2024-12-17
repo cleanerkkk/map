@@ -3,9 +3,14 @@ package com.example.map;
 import android.app.Application;
 import android.content.Context;
 
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.maps.MapsInitializer;
 import com.amap.api.services.core.ServiceSettings;
+import android.Manifest;
+import android.content.pm.PackageManager;
 
 public class App  extends Application {
 
@@ -13,6 +18,8 @@ public class App  extends Application {
     public void onCreate() {
         super.onCreate();
         Context mContext = this;
+
+
         // 定位隐私政策同意
         AMapLocationClient.updatePrivacyShow(mContext,true,true);
         AMapLocationClient.updatePrivacyAgree(mContext,true);
