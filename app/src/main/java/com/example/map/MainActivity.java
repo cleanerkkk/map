@@ -10,8 +10,6 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -25,24 +23,36 @@ import com.amap.api.location.AMapLocationListener;
 import com.amap.api.maps.AMap;
 import com.amap.api.maps.LocationSource;
 
+import com.amap.api.maps.model.LatLng;
 import com.amap.api.maps.model.MyLocationStyle;
 
+import com.amap.api.services.core.AMapException;
+import com.amap.api.services.core.LatLonPoint;
+import com.amap.api.services.geocoder.GeocodeResult;
+import com.amap.api.services.geocoder.GeocodeSearch;
+import com.amap.api.services.geocoder.RegeocodeAddress;
+import com.amap.api.services.geocoder.RegeocodeQuery;
+import com.amap.api.services.geocoder.RegeocodeResult;
 import com.example.map.databinding.ActivityMainBinding;
-import com.example.map.utils.MapBoundaryHelper;
+import com.example.map.utils.LocationManager;
+import com.example.map.utils.MapBoundaryManager;
 
-import java.util.List;
+public class MainActivity extends AppCompatActivity implements   GeocodeSearch.OnGeocodeSearchListener, AMap.OnMapClickListener, AMap.OnMapLongClickListener {
 
-public class MainActivity extends AppCompatActivity implements AMapLocationListener, LocationSource {
+//    private static final int REQUEST_PERMISSION_CODE = 100;
 
-    private static final int REQUEST_PERMISSION_CODE = 100;
+
+    private GeocodeSearch geocodeSearch;
+
+    private static final int PARSE_SUCCESS_CODE = 1000;
     private ActivityMainBinding binding;
 
     // 声明地图控制器
     private AMap aMap = null;
 
-    private MapBoundaryHelper boundaryHelper;
+    private LocationManager locationManager;
     // 声明地图定位监听
-    private LocationSource.OnLocationChangedListener mListener = null;
+    private LocationManager.OnLocationChangedListener mListener = null;
 
 
 
@@ -52,8 +62,6 @@ public class MainActivity extends AppCompatActivity implements AMapLocationListe
 
     public AMapLocationClient mLocationClient = null;
 
-    //声明AMapLocationClientOption对象
-    public AMapLocationClientOption mLocationOption = null;
 
 
     @Override
@@ -72,8 +80,10 @@ public class MainActivity extends AppCompatActivity implements AMapLocationListe
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-        initLocation();
+        locationManager = new LocationManager(this, mListener );
+
         binding.mapView.onCreate(savedInstanceState);
+        initSearch();
         initMap();
     }
     @Override
@@ -87,7 +97,7 @@ public class MainActivity extends AppCompatActivity implements AMapLocationListe
             // 获取到权限
             Log.d(TAG, "onResume: 已获取到权限");
             showMsg("已获取到权限");
-            startLocation();
+            locationManager.startLocation();
         } else {
             // 请求定位权限
             requestPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION);
@@ -98,79 +108,57 @@ public class MainActivity extends AppCompatActivity implements AMapLocationListe
         Toast.makeText(this, llw, Toast.LENGTH_SHORT).show();
     }
 
+
+
+    private void initSearch() {
+
+        try {
+            geocodeSearch = new GeocodeSearch(this);
+
+            geocodeSearch.setOnGeocodeSearchListener(this);
+        } catch (AMapException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void latLonToAddress(LatLng latLng) {
+
+        LatLonPoint latLonPoint = new LatLonPoint(latLng.latitude, latLng.longitude);
+
+        RegeocodeQuery query = new RegeocodeQuery(latLonPoint, 20, GeocodeSearch.AMAP);
+
+        geocodeSearch.getFromLocationAsyn(query);
+    }
+
+    @Override
+    public void onMapClick(LatLng latLng) {
+        latLonToAddress(latLng);
+    }
+    @Override
+    public void onMapLongClick(LatLng latLng) {
+        showMsg("长按了地图" + latLng.longitude + "," + latLng.latitude);
+    }
+
     /**
      * 初始化地图
      */
     private void initMap() {
         if (aMap == null) {
             aMap = binding.mapView.getMap();
-            // 创建定位蓝点的样式
-            MyLocationStyle myLocationStyle = new MyLocationStyle();
-            // 自定义定位蓝点图标
-//            myLocationStyle.myLocationIcon(BitmapDescriptorFactory.fromResource(R.drawable.gps_point));
-            // 自定义精度范围的圆形边框颜色  都为0则透明
-            myLocationStyle.strokeColor(Color.argb(0, 0, 0, 0));
-            // 自定义精度范围的圆形边框宽度  0 无宽度
-            myLocationStyle.strokeWidth(0);
-            // 设置圆形的填充颜色  都为0则透明
-            myLocationStyle.radiusFillColor(Color.argb(0, 0, 0, 0));
-            // 设置定位蓝点的样式
-            aMap.setMyLocationStyle(myLocationStyle);
-
-            // 设置定位监听
-            aMap.setLocationSource(this);
-            // 设置为true表示启动显示定位蓝点，false表示隐藏定位蓝点并不进行定位，默认是false。
+            aMap.setOnMapClickListener(this);
+            aMap.setOnMapLongClickListener(this);
             aMap.setMyLocationEnabled(true);
-            boundaryHelper = new MapBoundaryHelper(aMap);
-                // 查询并绘制行政区边界
+            MapBoundaryManager boundaryHelper = new MapBoundaryManager(aMap);
             boundaryHelper.drawBoundary(this, "江苏");
 
-
-//            aMap.setMinZoomLevel(12);
         }
     }
 
 
 
-    /**
-     * 初始化定位
-     */
-    private void initLocation() {
-        try {
-            //初始化定位
-            mLocationClient = new AMapLocationClient(getApplicationContext());
-            //设置定位回调监听
-            mLocationClient.setLocationListener(this);
-            //初始化AMapLocationClientOption对象
-            mLocationOption = new AMapLocationClientOption();
-            //设置定位模式为AMapLocationMode.Hight_Accuracy，高精度模式。
-            mLocationOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Hight_Accuracy);
-            //获取最近3s内精度最高的一次定位结果
-            mLocationOption.setOnceLocationLatest(true);
-            //设置是否返回地址信息（默认返回地址信息）
-            mLocationOption.setNeedAddress(true);
-            //设置定位超时时间，单位是毫秒
-            mLocationOption.setHttpTimeOut(6000);
-            //给定位客户端对象设置定位参数
-            mLocationClient.setLocationOption(mLocationOption);
 
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-    /**
-     * 开始定位
-     */
-    private void startLocation() {
-        if (mLocationClient != null) mLocationClient.startLocation();
-    }
 
-    /**
-     * 停止定位
-     */
-    private void stopLocation() {
-        if (mLocationClient != null) mLocationClient.stopLocation();
-    }
+
 
     @Override
     protected void onPause() {
@@ -193,71 +181,26 @@ public class MainActivity extends AppCompatActivity implements AMapLocationListe
         binding.mapView.onDestroy();
     }
 
-    /**
-     * 定位回调结果
-     */
-    @Override
-    public void onLocationChanged(AMapLocation aMapLocation) {
-        if (aMapLocation == null) {
-            showMsg("定位失败，aMapLocation 为空");
-            return;
-        }
-        // 获取定位结果
-        if (aMapLocation.getErrorCode() == 0) {
-            // 定位成功
-            showMsg("定位成功");
-//            aMapLocation.getLocationType();//获取当前定位结果来源，如网络定位结果，详见定位类型表
-//            aMapLocation.getLatitude();//获取纬度
-//            aMapLocation.getLongitude();//获取经度
-//            aMapLocation.getAccuracy();//获取精度信息
-//            aMapLocation.getAddress();//详细地址，如果option中设置isNeedAddress为false，则没有此结果，网络定位结果中会有地址信息，GPS定位不返回地址信息。
-//            aMapLocation.getCountry();//国家信息
-//            aMapLocation.getProvince();//省信息
-//            aMapLocation.getCity();//城市信息
-            String result = aMapLocation.getStreet();//城区信息
-//            aMapLocation.getStreet();//街道信息
-//            aMapLocation.getStreetNum();//街道门牌号信息
-//            aMapLocation.getCityCode();//城市编码
-//            aMapLocation.getAdCode();//地区编码
-//            aMapLocation.getAoiName();//获取当前定位点的AOI信息
-//            aMapLocation.getBuildingId();//获取当前室内定位的建筑物Id
-//            aMapLocation.getFloor();//获取当前室内定位的楼层
-//            aMapLocation.getGpsAccuracyStatus();//获取GPS的当前状态
 
-//            binding.tvAddress.setText(result);
-            // 停止定位
-            stopLocation();
-            if (mListener != null) {
-                mListener.onLocationChanged(aMapLocation);
-            }
-        } else {
-            // 定位失败
-            showMsg("定位失败，错误：" + aMapLocation.getErrorInfo());
-            Log.e(TAG,"location Error, ErrCode:"
-                    + aMapLocation.getErrorCode() + ", errInfo:"
-                    + aMapLocation.getErrorInfo());
+
+
+
+
+    @Override
+    public void onRegeocodeSearched(RegeocodeResult regeocodeResult, int rCode) {
+
+        if(rCode == PARSE_SUCCESS_CODE){
+            RegeocodeAddress regeocodeAddress = regeocodeResult.getRegeocodeAddress();
+
+            showMsg("地址："+regeocodeAddress.getFormatAddress());
+        }else {
+            showMsg("获取地址失败");
         }
     }
 
     @Override
-    public void activate(OnLocationChangedListener onLocationChangedListener) {
-        if (mListener == null) {
-            mListener = onLocationChangedListener;
-        }
-        startLocation();
-    }
+    public void onGeocodeSearched(GeocodeResult geocodeResult, int i) {
 
-    /**
-     * 禁用
-     */
-    @Override
-    public void deactivate() {
-        mListener = null;
-        if (mLocationClient != null) {
-            mLocationClient.stopLocation();
-            mLocationClient.onDestroy();
-        }
-        mLocationClient = null;
     }
 }
 

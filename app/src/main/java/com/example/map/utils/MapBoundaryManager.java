@@ -1,24 +1,17 @@
 package com.example.map.utils;
 
-import static android.content.ContentValues.TAG;
-
 import static java.lang.Thread.sleep;
 
-import android.Manifest;
 import android.content.Context;
 import android.content.res.AssetManager;
 import android.graphics.Color;
 import android.os.Environment;
 import android.util.Log;
 
-import androidx.core.content.ContextCompat;
-
 import com.amap.api.maps.AMap;
-import com.amap.api.maps.CameraUpdateFactory;
 import com.amap.api.maps.model.LatLng;
 import com.amap.api.maps.model.LatLngBounds;
 import com.amap.api.maps.model.PolygonOptions;
-import com.amap.api.maps.model.PolylineOptions;
 import com.amap.api.services.core.AMapException;
 import com.amap.api.services.district.DistrictItem;
 import com.amap.api.services.district.DistrictResult;
@@ -28,7 +21,6 @@ import com.google.gson.Gson;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,13 +29,13 @@ import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MapBoundaryHelper {
+public class MapBoundaryManager {
 
     private static final String TAG = "MapBoundaryHelper";
 
     private AMap aMap;
 
-    public MapBoundaryHelper(AMap aMap) {
+    public MapBoundaryManager(AMap aMap) {
         this.aMap = aMap;
     }
 
