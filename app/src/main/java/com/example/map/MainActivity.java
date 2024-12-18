@@ -28,6 +28,7 @@ import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
 import com.amap.api.location.AMapLocationListener;
 import com.amap.api.maps.AMap;
+import com.amap.api.maps.CameraUpdateFactory;
 import com.amap.api.maps.LocationSource;
 
 import com.amap.api.maps.model.LatLng;
@@ -85,6 +86,8 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
 
         });
 
+
+        // 选择省/市菜单
         showMenuButton = findViewById(R.id.showMenuButton);
         // 设置按钮点击事件
         showMenuButton.setOnClickListener(new View.OnClickListener() {
@@ -129,24 +132,7 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
         initMap();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
 
-        binding.mapView.onResume();
-
-        // 检查是否已经获取到定位权限
-        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            // 获取到权限
-            Log.d(TAG, "onResume: 已获取到权限");
-            showMsg("已获取到权限");
-            locationManager.startLocation();
-        } else {
-            // 请求定位权限
-            requestPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION);
-        }
-
-    }
 
     private void showMsg(CharSequence llw) {
         Toast.makeText(this, llw, Toast.LENGTH_SHORT).show();
@@ -170,15 +156,64 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
 
     // 点击地图时返回行政区信息
     @Override
-    public void onLocationResult(String district) {
-        Log.d(TAG, "点击位置的行政区: " + district + "江苏省".equals(district));
-        showMsg("行政区: " + district + menuMode);
+    public void onLocationResult(RegeocodeAddress address) {
+        String district = null;
         if ("province".equals(menuMode)){
+            district = address.getProvince();
+            showMsg("选择了"+district );
             boundaryHelper.clearBoundaries();
             if ("江苏省".equals(district)){
+                updateMenuMode();
                 boundaryHelper.drawBoundary(this, district);
             }
         }
+        else{
+            district = address.getCity();
+            showMsg("选择了" + district);
+            if (address.getProvince().equals("江苏省")) {
+                LatLonPoint center = boundaryHelper.getCenter(this, district, address.getProvince());
+                aMap.moveCamera(CameraUpdateFactory.changeLatLng(new LatLng(center.getLatitude(), center.getLongitude())));
+            }
+        }
+    }
+
+    private void updateMenuMode() {
+        // 获取当前的 PopupMenu 实例
+        PopupMenu popupMenu = new PopupMenu(MainActivity.this, showMenuButton);
+        getMenuInflater().inflate(R.menu.menu_options, popupMenu.getMenu());
+
+        // 设置菜单项的选中状态
+        Menu menu = popupMenu.getMenu();
+
+        // 设置市级菜单为选中状态
+        MenuItem cityItem = menu.findItem(R.id.city_menu);
+        cityItem.setChecked(true);  // 设置市级为选中
+
+        // 如果需要，设置省级菜单项取消选中
+        MenuItem provinceItem = menu.findItem(R.id.province_menu);
+        provinceItem.setChecked(false);  // 取消省级选中
+        menuMode = "city";
+        // 显示菜单
+//        popupMenu.show();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        binding.mapView.onResume();
+
+        // 检查是否已经获取到定位权限
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            // 获取到权限
+            Log.d(TAG, "onResume: 已获取到权限");
+            showMsg("已获取到权限");
+            locationManager.startLocation();
+        } else {
+            // 请求定位权限
+            requestPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+
     }
 
     @Override

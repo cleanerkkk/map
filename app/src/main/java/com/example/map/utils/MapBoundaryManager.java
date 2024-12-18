@@ -13,6 +13,7 @@ import com.amap.api.maps.model.LatLng;
 import com.amap.api.maps.model.LatLngBounds;
 import com.amap.api.maps.model.PolygonOptions;
 import com.amap.api.services.core.AMapException;
+import com.amap.api.services.core.LatLonPoint;
 import com.amap.api.services.district.DistrictItem;
 import com.amap.api.services.district.DistrictResult;
 import com.amap.api.services.district.DistrictSearch;
@@ -43,6 +44,16 @@ public class MapBoundaryManager {
 
     public String Province;
 
+    public LatLonPoint getCenter(Context context, String cityName, String provinceName) {
+        List<DistrictItem> cities = loadCityBoundaries(context, provinceName);
+        for (DistrictItem city : cities) {
+            if (city.getName().equals(cityName)) {
+                return city.getCenter();
+            }
+        }
+        return null;
+    }
+
 
     private List<DistrictItem> loadCityBoundaries(Context context, String districtName) {
         List<DistrictItem> cityBoundaries = new ArrayList<>();
@@ -64,6 +75,7 @@ public class MapBoundaryManager {
         }
         return cityBoundaries;
     }
+
 
     /**
      * 绘制行政区边界,省级单位
@@ -155,6 +167,7 @@ public class MapBoundaryManager {
     public void saveCityBoundaries(Context context, DistrictItem cityItem, String districtName) {
         File directory = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), districtName);
         // 如果文件夹不存在，则创建它
+
         if (!directory.exists()) {
             boolean isDirCreated = directory.mkdirs();  // 创建文件夹
             if (isDirCreated) {
