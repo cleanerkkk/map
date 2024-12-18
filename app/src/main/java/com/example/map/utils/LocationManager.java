@@ -8,19 +8,20 @@ import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
 import com.amap.api.location.AMapLocationListener;
+import com.amap.api.maps.LocationSource;
 
-public class LocationManager implements AMapLocationListener {
+public class LocationManager implements AMapLocationListener, LocationSource {
     private static final String TAG = "LocationManager";
     private AMapLocationClient mLocationClient;
-    private OnLocationChangedListener mListener;
+    private LocationSource.OnLocationChangedListener mListener;
 
-    public interface OnLocationChangedListener {
-        void onLocationChanged(AMapLocation aMapLocation);
-    }
 
-    public LocationManager(Context context, OnLocationChangedListener listener) {
+
+
+
+
+    public LocationManager(Context context, LocationSource.OnLocationChangedListener listener) {
         mListener = listener;
-        ;
         initLocation(context);
     }
 
@@ -74,5 +75,21 @@ public class LocationManager implements AMapLocationListener {
                 mListener.onLocationChanged(null);
             }
         }
+    }
+    @Override
+    public void activate(LocationSource.OnLocationChangedListener onLocationChangedListener) {
+        mListener =  onLocationChangedListener;
+        if (mLocationClient != null) {
+            mLocationClient.startLocation();
+        }
+    }
+
+    // 停止定位
+    @Override
+    public void deactivate() {
+        if (mLocationClient != null) {
+            mLocationClient.stopLocation();
+        }
+        mListener = null;
     }
 }

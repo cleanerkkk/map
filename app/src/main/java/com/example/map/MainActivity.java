@@ -36,32 +36,21 @@ import com.amap.api.services.geocoder.RegeocodeResult;
 import com.example.map.databinding.ActivityMainBinding;
 import com.example.map.utils.LocationManager;
 import com.example.map.utils.MapBoundaryManager;
+import com.example.map.utils.MapClickListener;
 
-public class MainActivity extends AppCompatActivity implements   GeocodeSearch.OnGeocodeSearchListener, AMap.OnMapClickListener, AMap.OnMapLongClickListener {
-
-//    private static final int REQUEST_PERMISSION_CODE = 100;
+public class MainActivity extends AppCompatActivity implements MapClickListener.OnLocationResultListener {
 
 
-    private GeocodeSearch geocodeSearch;
-
-    private static final int PARSE_SUCCESS_CODE = 1000;
     private ActivityMainBinding binding;
 
-    // 声明地图控制器
     private AMap aMap = null;
 
     private LocationManager locationManager;
-    // 声明地图定位监听
-    private LocationManager.OnLocationChangedListener mListener = null;
-
 
 
     private static final String TAG = "MainActivity";
     // 请求权限意图
     private ActivityResultLauncher<String> requestPermission;
-
-    public AMapLocationClient mLocationClient = null;
-
 
 
     @Override
@@ -80,12 +69,14 @@ public class MainActivity extends AppCompatActivity implements   GeocodeSearch.O
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-        locationManager = new LocationManager(this, mListener );
+        locationManager = new LocationManager(this, aMapLocation -> {
+
+        });
 
         binding.mapView.onCreate(savedInstanceState);
-        initSearch();
         initMap();
     }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -104,60 +95,33 @@ public class MainActivity extends AppCompatActivity implements   GeocodeSearch.O
         }
 
     }
+
     private void showMsg(CharSequence llw) {
         Toast.makeText(this, llw, Toast.LENGTH_SHORT).show();
     }
 
 
-
-    private void initSearch() {
-
-        try {
-            geocodeSearch = new GeocodeSearch(this);
-
-            geocodeSearch.setOnGeocodeSearchListener(this);
-        } catch (AMapException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void latLonToAddress(LatLng latLng) {
-
-        LatLonPoint latLonPoint = new LatLonPoint(latLng.latitude, latLng.longitude);
-
-        RegeocodeQuery query = new RegeocodeQuery(latLonPoint, 20, GeocodeSearch.AMAP);
-
-        geocodeSearch.getFromLocationAsyn(query);
-    }
-
-    @Override
-    public void onMapClick(LatLng latLng) {
-        latLonToAddress(latLng);
-    }
-    @Override
-    public void onMapLongClick(LatLng latLng) {
-        showMsg("长按了地图" + latLng.longitude + "," + latLng.latitude);
-    }
-
-    /**
-     * 初始化地图
-     */
     private void initMap() {
         if (aMap == null) {
             aMap = binding.mapView.getMap();
-            aMap.setOnMapClickListener(this);
-            aMap.setOnMapLongClickListener(this);
+            MapClickListener mapClickListener = new MapClickListener(this, this); // 使用回调来获取点击位置的行政区
+            aMap.setOnMapClickListener(mapClickListener);
+
+            aMap.setLocationSource(locationManager);
             aMap.setMyLocationEnabled(true);
+
             MapBoundaryManager boundaryHelper = new MapBoundaryManager(aMap);
             boundaryHelper.drawBoundary(this, "江苏");
-
         }
     }
 
 
-
-
-
+    // 点击地图时返回行政区信息
+    @Override
+    public void onLocationResult(String district) {
+        Log.d(TAG, "点击位置的行政区: " + district);
+        showMsg("行政区: " + district);
+    }
 
 
     @Override
@@ -180,27 +144,11 @@ public class MainActivity extends AppCompatActivity implements   GeocodeSearch.O
         // 绑定生命周期 onDestroy
         binding.mapView.onDestroy();
     }
-
-
-
-
-
-
-    @Override
-    public void onRegeocodeSearched(RegeocodeResult regeocodeResult, int rCode) {
-
-        if(rCode == PARSE_SUCCESS_CODE){
-            RegeocodeAddress regeocodeAddress = regeocodeResult.getRegeocodeAddress();
-
-            showMsg("地址："+regeocodeAddress.getFormatAddress());
-        }else {
-            showMsg("获取地址失败");
-        }
-    }
-
-    @Override
-    public void onGeocodeSearched(GeocodeResult geocodeResult, int i) {
-
-    }
 }
+
+
+
+
+
+
 
