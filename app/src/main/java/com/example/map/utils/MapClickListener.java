@@ -5,7 +5,6 @@ import android.util.Log;
 import com.amap.api.maps.AMap;
 import com.amap.api.maps.model.LatLng;
 import com.amap.api.services.core.AMapException;
-import com.amap.api.services.geocoder.GeocodeQuery;
 import com.amap.api.services.geocoder.GeocodeResult;
 import com.amap.api.services.geocoder.GeocodeSearch;
 import com.amap.api.services.geocoder.RegeocodeQuery;
@@ -23,7 +22,7 @@ public class MapClickListener implements AMap.OnMapClickListener,GeocodeSearch.O
 
     // 定义一个回调接口，用于回传行政区信息
     public interface OnLocationResultListener {
-        void onLocationResult(RegeocodeAddress address);
+        void onClickLocationResult(RegeocodeAddress address);
     }
 
     private OnLocationResultListener locationResultListener;
@@ -60,7 +59,7 @@ public class MapClickListener implements AMap.OnMapClickListener,GeocodeSearch.O
             Log.d(TAG, "点击位置的行政区：" + district);
 
             if (locationResultListener != null) {
-                locationResultListener.onLocationResult(address);
+                locationResultListener.onClickLocationResult(address);
             }
         } else {
             Log.e(TAG, "获取行政区信息失败");

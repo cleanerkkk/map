@@ -19,6 +19,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.PopupMenu;
 import android.widget.Spinner;
 import android.widget.Toast;
@@ -45,6 +46,7 @@ import com.example.map.databinding.ActivityMainBinding;
 import com.example.map.utils.LocationManager;
 import com.example.map.utils.MapBoundaryManager;
 import com.example.map.utils.MapClickListener;
+import com.example.map.utils.SearchHandler;
 
 public class MainActivity extends AppCompatActivity implements MapClickListener.OnLocationResultListener {
 
@@ -57,13 +59,16 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
 
     MapBoundaryManager boundaryHelper = null;
 
+    private EditText searchEditText;
+    private SearchHandler searchHandler;
+
 
     // 请求权限意图
     private ActivityResultLauncher<String> requestPermission;
 
-    Button showMenuButton = null;
-    String menuMode = "province";
-
+    private Button showMenuButton = null;
+    private String menuMode = "province";
+    private String city = "南京市";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -130,6 +135,12 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
         binding.mapView.onCreate(savedInstanceState);
 
         initMap();
+        searchEditText = findViewById(R.id.et_address);
+        searchHandler = new SearchHandler(this, aMap, city);
+        searchHandler.initSearchListener(searchEditText);
+
+
+
     }
 
 
@@ -156,7 +167,7 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
 
     // 点击地图时返回行政区信息
     @Override
-    public void onLocationResult(RegeocodeAddress address) {
+    public void onClickLocationResult(RegeocodeAddress address) {
         String district = null;
         if ("province".equals(menuMode)){
             district = address.getProvince();
