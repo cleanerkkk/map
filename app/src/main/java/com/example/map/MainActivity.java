@@ -14,6 +14,13 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import android.Manifest;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.PopupMenu;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.amap.api.location.AMapLocation;
@@ -40,17 +47,21 @@ import com.example.map.utils.MapClickListener;
 
 public class MainActivity extends AppCompatActivity implements MapClickListener.OnLocationResultListener {
 
-
+    private static final String TAG = "MainActivity";
     private ActivityMainBinding binding;
 
     private AMap aMap = null;
 
     private LocationManager locationManager;
 
+    MapBoundaryManager boundaryHelper = null;
 
-    private static final String TAG = "MainActivity";
+
     // 请求权限意图
     private ActivityResultLauncher<String> requestPermission;
+
+    Button showMenuButton = null;
+    String menuMode = "province";
 
 
     @Override
@@ -64,6 +75,7 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
         EdgeToEdge.enable(this);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -73,7 +85,47 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
 
         });
 
+        showMenuButton = findViewById(R.id.showMenuButton);
+        // 设置按钮点击事件
+        showMenuButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // 创建 PopupMenu 对象
+                PopupMenu popupMenu = new PopupMenu(MainActivity.this, v);
+                // 加载菜单资源
+                getMenuInflater().inflate(R.menu.menu_options, popupMenu.getMenu());
+
+                // 设置默认选中的菜单项
+                Menu menu = popupMenu.getMenu();
+                MenuItem normalItem = menu.findItem(R.id.province_menu);
+                normalItem.setChecked(true);  // 设置默认选中
+
+                // 显示菜单
+                popupMenu.show();
+
+                // 设置菜单项点击事件监听器
+                popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem item) {
+                        switch (item.getItemId()) {
+                            case R.id.province_menu:
+                                //省级
+                                menuMode = "province";
+                                return true;
+                            case R.id.city_menu:
+                                //市级
+                                menuMode = "city";
+                                return true;
+                            default:
+                                return false;
+                        }
+                    }
+                });
+            }
+        });
+
         binding.mapView.onCreate(savedInstanceState);
+
         initMap();
     }
 
@@ -110,8 +162,8 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
             aMap.setLocationSource(locationManager);
             aMap.setMyLocationEnabled(true);
 
-            MapBoundaryManager boundaryHelper = new MapBoundaryManager(aMap);
-            boundaryHelper.drawBoundary(this, "江苏");
+            boundaryHelper = new MapBoundaryManager(aMap);
+//            boundaryHelper.drawBoundary(this, "江苏");
         }
     }
 
@@ -119,10 +171,15 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
     // 点击地图时返回行政区信息
     @Override
     public void onLocationResult(String district) {
-        Log.d(TAG, "点击位置的行政区: " + district);
-        showMsg("行政区: " + district);
+        Log.d(TAG, "点击位置的行政区: " + district + "江苏省".equals(district));
+        showMsg("行政区: " + district + menuMode);
+        if ("province".equals(menuMode)){
+            boundaryHelper.clearBoundaries();
+            if ("江苏省".equals(district)){
+                boundaryHelper.drawBoundary(this, district);
+            }
+        }
     }
-
 
     @Override
     protected void onPause() {

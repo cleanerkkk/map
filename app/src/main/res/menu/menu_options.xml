@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/province_menu"
+        android:title="省级行政区" />
+
+    <item
+        android:id="@+id/city_menu"
+        android:title="市级行政区" />
+
+
+</menu>

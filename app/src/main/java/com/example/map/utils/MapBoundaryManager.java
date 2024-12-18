@@ -35,6 +35,8 @@ public class MapBoundaryManager {
 
     private AMap aMap;
 
+    private List<com.amap.api.maps.model.Polygon> polygons = new ArrayList<>();
+
     public MapBoundaryManager(AMap aMap) {
         this.aMap = aMap;
     }
@@ -67,7 +69,7 @@ public class MapBoundaryManager {
      * 绘制行政区边界,省级单位
      */
     public void drawBoundary(Context context,String province) {
-        String fileName = province + "省";
+        String fileName = province;
         List<DistrictItem> cityBoundaries = loadCityBoundaries(context, fileName);
         for (DistrictItem districtItem : cityBoundaries) {
             // 获取行政区的边界
@@ -90,9 +92,17 @@ public class MapBoundaryManager {
                         .strokeColor(Color.BLUE) // 边界线颜色
                         .fillColor(Color.argb(50, 0, 0, 255)); // 区域填充色（可根据需要调整）
 
-                aMap.addPolygon(polygonOptions);
+                com.amap.api.maps.model.Polygon polygon = aMap.addPolygon(polygonOptions);
+                polygons.add(polygon);
             }
         }
+    }
+
+    public void clearBoundaries() {
+        for (com.amap.api.maps.model.Polygon polygon : polygons) {
+            polygon.remove();  // 移除多边形
+        }
+        polygons.clear();  // 清空列表
     }
 
     /**

@@ -7,14 +7,39 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+
+
+
+
+
+    <!-- MapView -->
+
+
     <com.amap.api.maps.MapView
         android:id="@+id/map_view"
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1.0">
 
+
+    </com.amap.api.maps.MapView>
+
+    <Button
+        android:id="@+id/showMenuButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_marginStart="308dp"
+        android:text="显示菜单"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/map_view"
+        app:layout_constraintStart_toEndOf="@+id/map_view"
+        app:layout_constraintStart_toStartOf="@+id/map_view"
+        app:layout_constraintTop_toTopOf="@+id/map_view" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
