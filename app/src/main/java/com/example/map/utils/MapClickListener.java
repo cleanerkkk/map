@@ -13,18 +13,12 @@ import com.amap.api.services.geocoder.RegeocodeAddress;
 import com.amap.api.services.core.LatLonPoint;
 import com.example.map.MainActivity;
 
-public class MapClickListener implements AMap.OnMapClickListener,GeocodeSearch.OnGeocodeSearchListener {
+public class MapClickListener implements AMap.OnMapClickListener, GeocodeSearch.OnGeocodeSearchListener {
 
     private static final String TAG = "MapClickListener";
 
     private MainActivity mainActivity;
     private GeocodeSearch geocodeSearch;
-
-    // 定义一个回调接口，用于回传行政区信息
-    public interface OnLocationResultListener {
-        void onClickLocationResult(RegeocodeAddress address);
-    }
-
     private OnLocationResultListener locationResultListener;
 
     public MapClickListener(MainActivity mainActivity, OnLocationResultListener listener) {
@@ -49,7 +43,22 @@ public class MapClickListener implements AMap.OnMapClickListener,GeocodeSearch.O
         geocodeSearch.getFromLocationAsyn(query);
     }
 
-    // 处理逆地理查询结果
+    //    // 处理逆地理查询结果
+//    @Override
+//    public void onRegeocodeSearched(RegeocodeResult result, int rCode) {
+//        if (rCode == 1000 && result != null) {
+//            RegeocodeAddress address = result.getRegeocodeAddress();
+//            String district = address.getProvince();  // 获取行政区名称
+//
+//            Log.d(TAG, "点击位置的行政区：" + district);
+//
+//            if (locationResultListener != null) {
+//                locationResultListener.onClickLocationResult(address);
+//            }
+//        } else {
+//            Log.e(TAG, "获取行政区信息失败");
+//        }
+//    }
     @Override
     public void onRegeocodeSearched(RegeocodeResult result, int rCode) {
         if (rCode == 1000 && result != null) {
@@ -69,5 +78,10 @@ public class MapClickListener implements AMap.OnMapClickListener,GeocodeSearch.O
     @Override
     public void onGeocodeSearched(GeocodeResult geocodeResult, int i) {
 
+    }
+
+    // 定义一个回调接口，用于回传行政区信息
+    public interface OnLocationResultListener {
+        void onClickLocationResult(RegeocodeAddress address);
     }
 }

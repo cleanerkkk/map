@@ -1,7 +1,7 @@
 package com.example.map;
 
+import android.app.AlertDialog;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -14,35 +14,26 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import android.Manifest;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.PopupMenu;
-import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import com.amap.api.location.AMapLocation;
-import com.amap.api.location.AMapLocationClient;
-import com.amap.api.location.AMapLocationClientOption;
-import com.amap.api.location.AMapLocationListener;
 import com.amap.api.maps.AMap;
 import com.amap.api.maps.CameraUpdateFactory;
-import com.amap.api.maps.LocationSource;
 
 import com.amap.api.maps.model.LatLng;
-import com.amap.api.maps.model.MyLocationStyle;
 
-import com.amap.api.services.core.AMapException;
 import com.amap.api.services.core.LatLonPoint;
-import com.amap.api.services.geocoder.GeocodeResult;
-import com.amap.api.services.geocoder.GeocodeSearch;
 import com.amap.api.services.geocoder.RegeocodeAddress;
-import com.amap.api.services.geocoder.RegeocodeQuery;
-import com.amap.api.services.geocoder.RegeocodeResult;
 import com.example.map.databinding.ActivityMainBinding;
+import com.example.map.model.CityInfo;
+import com.example.map.model.CityInfoProvider;
 import com.example.map.utils.LocationManager;
 import com.example.map.utils.MapBoundaryManager;
 import com.example.map.utils.MapClickListener;
@@ -81,7 +72,7 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
         EdgeToEdge.enable(this);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-
+        CityInfoProvider.loadCityInfo(this);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -165,10 +156,12 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
     }
 
 
-    // 点击地图时返回行政区信息
+//     点击地图时返回行政区信息
     @Override
     public void onClickLocationResult(RegeocodeAddress address) {
         String district = null;
+        String province = address.getProvince();
+        String city = address.getCity();
         if ("province".equals(menuMode)){
             district = address.getProvince();
             showMsg("选择了"+district );
@@ -184,6 +177,12 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
             if (address.getProvince().equals("江苏省")) {
                 LatLonPoint center = boundaryHelper.getCenter(this, district, address.getProvince());
                 aMap.moveCamera(CameraUpdateFactory.changeLatLng(new LatLng(center.getLatitude(), center.getLongitude())));
+                CityInfo cityInfo = CityInfoProvider.getCityInfo(province, city);
+                if (cityInfo != null) {
+                    showCityInfoDialog(cityInfo);
+                } else {
+                    showMsg("未找到相关城市信息");
+                }
             }
         }
     }
@@ -247,6 +246,40 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
         // 绑定生命周期 onDestroy
         binding.mapView.onDestroy();
     }
+
+
+
+
+    private void showCityInfoDialog(CityInfo cityInfo) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        LayoutInflater inflater = getLayoutInflater();
+        View dialogView = inflater.inflate(R.layout.dialog_city_info, null);
+        builder.setView(dialogView);
+
+        TextView tvCityName = dialogView.findViewById(R.id.tv_city_name);
+        TextView tvCityInfo = dialogView.findViewById(R.id.tv_city_info);
+
+        StringBuilder cityInfoText = new StringBuilder();
+        cityInfoText.append("人文介绍：").append(cityInfo.getCulturalIntroduction()).append("\n")
+                .append("历史：").append(cityInfo.getHistory()).append("\n")
+                .append("农业：").append(cityInfo.getAgriculture()).append("\n")
+                .append("工业：").append(cityInfo.getIndustry()).append("\n")
+                .append("自然介绍：").append(cityInfo.getNaturalFeatures()).append("\n")
+                .append("气候：").append(cityInfo.getClimate()).append("\n")
+                .append("地形地貌：").append(cityInfo.getTopography()).append("\n")
+                .append("水文：").append(cityInfo.getHydrology());
+
+        tvCityName.setText(cityInfo.getCityName());
+        tvCityInfo.setText(cityInfoText.toString());
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // 点击对话框外部关闭对话框
+        dialog.setCanceledOnTouchOutside(true);
+    }
+
+
 }
 
 
