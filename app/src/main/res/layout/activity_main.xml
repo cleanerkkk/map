@@ -8,12 +8,6 @@
     tools:context=".MainActivity">
 
 
-
-
-
-
-
-
     <com.amap.api.maps.MapView
         android:id="@+id/map_view"
         android:layout_width="0dp"
@@ -48,7 +42,8 @@
             android:inputType="text"
             android:paddingStart="12dp"
             android:singleLine="true"
-            android:textColorHint = "#707070"
+            android:textColor="@color/black"
+            android:textColorHint = "@color/black"
             android:textSize="14sp" />
     </com.google.android.material.appbar.MaterialToolbar>
 
