@@ -154,7 +154,9 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
             case "administrative":
                 aMap.setTrafficEnabled(false);
                 aMap.setMapType(AMap.MAP_TYPE_NORMAL);
-
+                break;
+            case "random":
+                showRandomCity();
                 break;
             case "topographic":
                 aMap.setTrafficEnabled(false);
@@ -166,6 +168,17 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
             case "weather":
                 // Change to Weather Map
                 break;
+        }
+    }
+
+    private void showRandomCity(){
+        String cities[] = {"南京市","苏州市","无锡市","常州市","南通市","连云港市","淮安市","盐城市","扬州市","镇江市","泰州市","宿迁市"};
+        String selected = cities[(int)(Math.random()*cities.length)];
+        CityInfo cityInfo = CityInfoProvider.getCityInfo("江苏省",selected);
+        if (cityInfo != null) {
+            CityInfoDialog.showCityInfoDialog(this, cityInfo);
+        } else {
+            showMsg("未找到相关城市信息");
         }
     }
 

@@ -8,6 +8,10 @@
         android:icon="@drawable/test"
         android:title="地形图" />
     <item
+        android:id="@+id/nav_random"
+        android:icon="@drawable/test"
+        android:title="随机抽取" />
+    <item
         android:id="@+id/nav_temperature"
         android:icon="@drawable/test"
         android:title="温度图" />

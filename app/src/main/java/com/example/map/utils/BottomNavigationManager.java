@@ -22,6 +22,9 @@ public class BottomNavigationManager {
                     case R.id.nav_administrative:
                         listener.onNavigationItemSelected("administrative");
                         return true;
+                    case R.id.nav_random:
+                        listener.onNavigationItemSelected("random");
+                        return true;
                     case R.id.nav_topographic:
                         listener.onNavigationItemSelected("topographic");
                         return true;
