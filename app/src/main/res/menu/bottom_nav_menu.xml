@@ -1,0 +1,18 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_administrative"
+        android:icon="@drawable/test"
+        android:title="行政图" />
+    <item
+        android:id="@+id/nav_topographic"
+        android:icon="@drawable/test"
+        android:title="地形图" />
+    <item
+        android:id="@+id/nav_temperature"
+        android:icon="@drawable/test"
+        android:title="温度图" />
+    <item
+        android:id="@+id/nav_weather"
+        android:icon="@drawable/test"
+        android:title="天气图" />
+</menu>

@@ -1,6 +1,7 @@
 package com.example.map;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.text.Html;
@@ -29,6 +30,7 @@ import android.widget.Toast;
 import com.amap.api.maps.AMap;
 import com.amap.api.maps.CameraUpdateFactory;
 
+import com.amap.api.maps.MapsInitializer;
 import com.amap.api.maps.model.LatLng;
 
 import com.amap.api.services.core.LatLonPoint;
@@ -36,15 +38,18 @@ import com.amap.api.services.geocoder.RegeocodeAddress;
 import com.example.map.databinding.ActivityMainBinding;
 import com.example.map.model.CityInfo;
 import com.example.map.model.CityInfoProvider;
+import com.example.map.utils.BottomNavigationManager;
 import com.example.map.utils.CityInfoDialog;
 import com.example.map.utils.LocationManager;
 import com.example.map.utils.MapBoundaryManager;
 import com.example.map.utils.MapClickListener;
+import com.example.map.utils.MapUtils;
 import com.example.map.utils.SearchHandler;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.Objects;
 
-public class MainActivity extends AppCompatActivity implements MapClickListener.OnLocationResultListener {
+public class MainActivity extends AppCompatActivity implements MapClickListener.OnLocationResultListener,BottomNavigationManager.OnNavigationItemSelectedListener {
 
     private static final String TAG = "MainActivity";
     MapBoundaryManager boundaryHelper = null;
@@ -64,15 +69,18 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         requestPermission = registerForActivityResult(new ActivityResultContracts.RequestPermission(), result -> {
             // 权限申请结果
             Log.d(TAG, "权限申请结果: " + result);
             showMsg("权限申请结果: " + result);
         });
         super.onCreate(savedInstanceState);
+//        MapUtils.setTerrainEnable(true);
         EdgeToEdge.enable(this);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
         CityInfoProvider.loadCityInfo(this);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -82,6 +90,8 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
         locationManager = new LocationManager(this, aMapLocation -> {
 
         });
+        BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
+        BottomNavigationManager.setupBottomNavigation( this, bottomNavigationView, this);
 
 
         // 选择省/市菜单
@@ -134,7 +144,30 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
 
 
     }
+    @Override
+    public void onNavigationItemSelected(String mapType) {
+        changeMapType(mapType);
+    }
+    private void changeMapType(String mapType) {
+        // Implement the logic to change the map type based on the selected item
+        switch (mapType) {
+            case "administrative":
+                aMap.setTrafficEnabled(false);
+                aMap.setMapType(AMap.MAP_TYPE_NORMAL);
 
+                break;
+            case "topographic":
+                aMap.setTrafficEnabled(false);
+                aMap.setMapType(AMap.MAP_TYPE_SATELLITE);
+                break;
+            case "temperature":
+                aMap.setTrafficEnabled(true);
+                break;
+            case "weather":
+                // Change to Weather Map
+                break;
+        }
+    }
 
 
     private void showMsg(CharSequence llw) {
@@ -160,6 +193,8 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
 //     点击地图时返回行政区信息
     @Override
     public void onClickLocationResult(@NonNull RegeocodeAddress address) {
+        if (aMap.getMapType() != AMap.MAP_TYPE_NORMAL)
+            return;
         String district = null;
         String province = address.getProvince();
         String city = address.getCity();
@@ -249,36 +284,6 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
         binding.mapView.onDestroy();
     }
 
-    private void showCityInfoDialog(@NonNull CityInfo cityInfo) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        LayoutInflater inflater = getLayoutInflater();
-        View dialogView = inflater.inflate(R.layout.dialog_city_info, null);
-        builder.setView(dialogView);
-
-        TextView tvCityName = dialogView.findViewById(R.id.tv_city_name);
-        TextView tvCityInfo = dialogView.findViewById(R.id.tv_city_info);
-
-        String cityInfoText =
-                "<span style='color:black;'><strong>人文介绍</strong></span>：" + cityInfo.getCulturalIntroduction() + "<br>" +
-                "<span style='color:black;'><strong>历史</strong></span>：" + cityInfo.getHistory() + "<br>" +
-                "<span style='color:black;'><strong>农业</strong></span>：" + cityInfo.getAgriculture() + "<br>" +
-                "<span style='color:black;'><strong>工业</strong></span>：" + cityInfo.getIndustry() + "<br>" +
-                "<span style='color:black;'><strong>自然介绍</strong></span>：" + cityInfo.getNaturalFeatures() + "<br>" +
-                "<span style='color:black;'><strong>气候</strong></span>：" + cityInfo.getClimate() + "<br>" +
-                "<span style='color:black;'><strong>地形地貌</strong></span>：" + cityInfo.getTopography() + "<br>" +
-                "<span style='color:black;'><strong>水文</strong></span>：" + cityInfo.getHydrology();
-        String cityName = "<span style='text-align:center;'><b>" + cityInfo.getCityName() + "</b></span>";
-        CharSequence c = Html.fromHtml(cityName, 1);
-        tvCityName.setText(c);
-        CharSequence charSequence = Html.fromHtml(cityInfoText, 1);
-        tvCityInfo.setText(charSequence);
-        AlertDialog dialog = builder.create();
-        Objects.requireNonNull(dialog.getWindow()).setBackgroundDrawableResource(R.drawable.dialog_bg);
-        dialog.show();
-
-        // 点击对话框外部关闭对话框
-        dialog.setCanceledOnTouchOutside(true);
-    }
 
 
 }
