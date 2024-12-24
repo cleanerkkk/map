@@ -33,8 +33,13 @@ import com.amap.api.maps.CameraUpdateFactory;
 import com.amap.api.maps.MapsInitializer;
 import com.amap.api.maps.model.LatLng;
 
+import com.amap.api.services.core.AMapException;
 import com.amap.api.services.core.LatLonPoint;
 import com.amap.api.services.geocoder.RegeocodeAddress;
+import com.amap.api.services.weather.LocalWeatherForecastResult;
+import com.amap.api.services.weather.LocalWeatherLiveResult;
+import com.amap.api.services.weather.WeatherSearch;
+import com.amap.api.services.weather.WeatherSearchQuery;
 import com.example.map.databinding.ActivityMainBinding;
 import com.example.map.model.CityInfo;
 import com.example.map.model.CityInfoProvider;
@@ -45,11 +50,13 @@ import com.example.map.utils.MapBoundaryManager;
 import com.example.map.utils.MapClickListener;
 import com.example.map.utils.MapUtils;
 import com.example.map.utils.SearchHandler;
+import com.example.map.utils.WeatherInfoDialog;
+import com.example.map.utils.WeatherManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.Objects;
 
-public class MainActivity extends AppCompatActivity implements MapClickListener.OnLocationResultListener,BottomNavigationManager.OnNavigationItemSelectedListener {
+public class MainActivity extends AppCompatActivity implements MapClickListener.OnLocationResultListener,BottomNavigationManager.OnNavigationItemSelectedListener,WeatherManager.WeatherCallback {
 
     private static final String TAG = "MainActivity";
     MapBoundaryManager boundaryHelper = null;
@@ -58,6 +65,8 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
     private LocationManager locationManager;
     private EditText searchEditText;
     private SearchHandler searchHandler;
+    private WeatherManager weatherManager;
+    private String mapType = null;
 
 
     // 请求权限意图
@@ -93,6 +102,8 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
         BottomNavigationManager.setupBottomNavigation( this, bottomNavigationView, this);
 
+
+        weatherManager = new WeatherManager(this, this);
 
         // 选择省/市菜单
         showMenuButton = findViewById(R.id.showMenuButton);
@@ -148,24 +159,27 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
     public void onNavigationItemSelected(String mapType) {
         changeMapType(mapType);
     }
-    private void changeMapType(String mapType) {
+    private void changeMapType(String amapType) {
         // Implement the logic to change the map type based on the selected item
-        switch (mapType) {
+        switch (amapType) {
             case "administrative":
-                aMap.setTrafficEnabled(false);
                 aMap.setMapType(AMap.MAP_TYPE_NORMAL);
+                mapType = "administrative";
                 break;
             case "random":
                 showRandomCity();
                 break;
             case "topographic":
-                aMap.setTrafficEnabled(false);
                 aMap.setMapType(AMap.MAP_TYPE_SATELLITE);
+                mapType = "topographic";
                 break;
             case "temperature":
-                aMap.setTrafficEnabled(true);
+                aMap.setMapType(AMap.MAP_TYPE_NORMAL);
+                mapType = "climate";
                 break;
             case "weather":
+                aMap.setMapType(AMap.MAP_TYPE_NORMAL);
+                mapType = "weather";
                 // Change to Weather Map
                 break;
         }
@@ -176,7 +190,7 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
         String selected = cities[(int)(Math.random()*cities.length)];
         CityInfo cityInfo = CityInfoProvider.getCityInfo("江苏省",selected);
         if (cityInfo != null) {
-            CityInfoDialog.showCityInfoDialog(this, cityInfo);
+            CityInfoDialog.showCityInfoDialog(this, cityInfo, "all");
         } else {
             showMsg("未找到相关城市信息");
         }
@@ -206,8 +220,8 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
 //     点击地图时返回行政区信息
     @Override
     public void onClickLocationResult(@NonNull RegeocodeAddress address) {
-        if (aMap.getMapType() != AMap.MAP_TYPE_NORMAL)
-            return;
+//        if (aMap.getMapType() != AMap.MAP_TYPE_NORMAL)
+//            return;
         String district = null;
         String province = address.getProvince();
         String city = address.getCity();
@@ -223,13 +237,16 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
         else{
             district = address.getCity();
             showMsg("选择了" + district);
-            if (address.getProvince().equals("江苏省")) {
+            if (mapType != null && mapType.equals("weather") ) {
+                weatherManager.searchWeather(district);
+            }
+            else if (address.getProvince().equals("江苏省")) {
                 LatLonPoint center = boundaryHelper.getCenter(this, district, address.getProvince());
                 aMap.moveCamera(CameraUpdateFactory.changeLatLng(new LatLng(center.getLatitude(), center.getLongitude())));
                 CityInfo cityInfo = CityInfoProvider.getCityInfo(province, city);
                 if (cityInfo != null) {
 //                    showCityInfoDialog(cityInfo);
-                    CityInfoDialog.showCityInfoDialog(this, cityInfo);
+                    CityInfoDialog.showCityInfoDialog(this, cityInfo, mapType);
                 } else {
                     showMsg("未找到相关城市信息");
                 }
@@ -297,7 +314,15 @@ public class MainActivity extends AppCompatActivity implements MapClickListener.
         binding.mapView.onDestroy();
     }
 
+    @Override
+    public void onWeatherInfoReceived(String city, String weatherInfo) {
+        CityInfoDialog.showWeatherInfoDialog(this, city, weatherInfo);
+    }
 
+    @Override
+    public void onWeatherInfoError(String errorMsg) {
+        showMsg(errorMsg);
+    }
 
 }
 
