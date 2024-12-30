@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">map</string>
+    <string name="app_name">geoHelper</string>
     <string name="input_hint">请输入地址</string>
 </resources>
